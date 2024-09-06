@@ -1,0 +1,21 @@
+.bg {
+    background-color: rgb(50, 50, 50);
+}
+.container {
+    width: 100%;
+    height: 97.5vh;
+}
+iframe {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: white;
+    min-width: 200px;
+    flex: 1;
+    height: 100%;
+    width: 100%;
+}
+.result {
+    font-style:italic;
+    color: antiquewhite;
+}
