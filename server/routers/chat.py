@@ -1,11 +1,10 @@
-from database.data_queries import user_data
 import json
 from fastapi import APIRouter, HTTPException, status, Header, Depends, WebSocket, WebSocketDisconnect
 from JWT.functions_jwt import validate_token
 from fastapi.responses import HTMLResponse, JSONResponse
 from pathlib import Path
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from database.messages_queries import  save_message, whole_messages
 
 chat_rts = APIRouter()
@@ -20,8 +19,8 @@ async def chat():
 
 @chat_rts.get("/chat_request")
 async def chat_client(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    response = validate_token(token=token)
+    token: str = credentials.credentials
+    response: dict | JSONResponse = validate_token(token=token)
 
     if isinstance(response, JSONResponse):
         json_data = json.loads(response.body.decode('UTF-8'))
@@ -30,14 +29,14 @@ async def chat_client(credentials: HTTPAuthorizationCredentials = Depends(securi
             detail=json_data['message']
         )
     
-    return HTTPException(
+    raise HTTPException(
         status_code=status.HTTP_200_OK,
         detail="No problem!"
     )
 
 @chat_rts.get("/verify/token")
-async def token_verify(Authorization: str = Header(None)):
-    token = Authorization.split(" ")[1]
+async def token_verify(Authorization: str = Header(None)) -> str:
+    token: str = Authorization.split(" ")[1]
     return validate_token(token=token, output=True)
 
 
@@ -98,9 +97,6 @@ class ConnectionManager:
                         # Aquí podrías opcionalmente eliminar la conexión que falló
                         print(f"Error: la conexión {connection} está cerrada o ya completada.")
                 
-
-
-
 connection_manager = ConnectionManager()
 
 @chat_rts.websocket("/ws_chat")
@@ -108,37 +104,36 @@ async def websocket_endpoint(websocket: WebSocket):
     await connection_manager.connect(websocket)
     
     try:
-        #await websocket.accept()
-
         while True:
-            data_fetch = await websocket.receive_text()
-            data_dict = json.loads(data_fetch)
-            message = data_dict["message"]
-            token = data_dict["token"]
+            data_fetch: str = await websocket.receive_text()
+            data_dict: dict = json.loads(data_fetch)
+            message: str = data_dict["message"]
+            token: str = data_dict["token"]
             
-            token_decode = await json_data(token=token)
-            user = token_decode["user_name"]
+            token_decode: bool | JSONResponse = await json_data(token=token)
+            user: str = token_decode["user_name"]
             
             # Guardado de mensajes con identificador.
-            user_id = token_decode["id"]
+            user_id: int = token_decode["id"]
             await save_message(user_id, message)
 
+            # Envio de mensaje a todas las conexiones activas.
             send_message = f"{user}: {message}"
-            #await websocket.send_text(f"{user}: {data_message}")
             await connection_manager.broadcast(send_message, websocket)
+
     except WebSocketDisconnect as e:
         print(e)
 
 
 @chat_rts.get("/load_messages")
-async def load_messages(Authorization: str = Header(None)):
-    token = Authorization.split(" ")[1]
-    user = await json_data(token)
-    messages = await whole_messages()
+async def load_messages(Authorization: str = Header(None)) -> dict:
+    token: str = Authorization.split(" ")[1]
+    user: dict = await json_data(token)
+    messages: list = await whole_messages()
   
     "Relacionar ID de mensaje con ID de usuario"
 
-    msg_dict = {}
+    msg_dict: dict = {}
 
     for message in messages:
         if message[1] == user['id']:
@@ -158,8 +153,8 @@ async def load_messages(Authorization: str = Header(None)):
 
 
 
-async def json_data(token):
-    verify_token_response = validate_token(token=token, output=True)
+async def json_data(token) -> bool | JSONResponse:
+    verify_token_response = validate_token(token=token)
     
     if isinstance(verify_token_response, JSONResponse):
         return False

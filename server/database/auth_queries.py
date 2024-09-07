@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS messages (
 ''')
 
 # Función para agregar un usuario
-async def user_create(user_name, user_password):
+async def user_create(user_name, user_password) -> dict | bool:
     """ Crear un nuevo usuario verificando si el user_name ya existe """
     try:
         with conn:
@@ -37,10 +37,10 @@ async def user_create(user_name, user_password):
             conn.commit()
         logging.info(f"Usuario '{user_name}' creado con éxito.")
 
-        response = await user_data(user_name)
+        response: list | bool = await user_data(user_name)
 
         if response:
-            user_dict = {
+            user_dict: dict = {
                 "id" : response[0],
                 "user_name" : response[1],
                 "user_password" : response[2]

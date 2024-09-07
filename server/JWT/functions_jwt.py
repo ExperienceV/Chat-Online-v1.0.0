@@ -28,7 +28,7 @@ def write_token(data: dict) -> str:
     return token
 
 
-def validate_token(token: str, output: bool = False) -> JSONResponse:
+def validate_token(token: str, output: bool = False) -> dict | JSONResponse:
     secret_key = getenv("SECRET")
     
     if not secret_key:

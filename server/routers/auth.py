@@ -20,10 +20,9 @@ async def login_client():
 
 @auth_rt.post("/login_request")
 async def login_server(login: login_model):
-    print(login.model_dump())
-    response = await user_login(
-        user_name= login.user_name,
-        user_password= login.user_password
+    response: dict | bool = await user_login(
+        user_name=login.user_name,
+        user_password=login.user_password
     )
 
     if not response:
@@ -32,8 +31,7 @@ async def login_server(login: login_model):
             detail="Oooops, parece que hubo un problema."
         )
 
-    token_create = write_token(response)
-    print(response)
+    token_create: str = write_token(response)
     raise HTTPException(status_code=200, detail=token_create)
 
 @auth_rt.get("/register", response_class=HTMLResponse)
@@ -50,7 +48,7 @@ async def register_server(register: register_model):
             detail="Las contraseñas no coinciden."
         )
     
-    response = await user_create(
+    response: dict | bool = await user_create(
         user_name= register.user_name,
         user_password= register.user_password
     )
@@ -62,6 +60,6 @@ async def register_server(register: register_model):
             detail="Oooops, parece que hubo un problema."
         )
 
-    token_create = write_token(response)
+    token_create: str = write_token(response)
     
     raise HTTPException(status_code=200, detail=token_create)

@@ -1,6 +1,5 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from pathlib import Path
 from routers import auth, chat
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,5 +29,6 @@ app.include_router(chat.chat_rts)
 
 app.get("/")
 async def home():
-    return "Whe tienes kaka"
+    return "This a."
+
 
