@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const messageInput = document.getElementById('message');
     const messageList = document.getElementById('messages');
     const token = sessionStorage.getItem('token');
-    
+
 
     function create_msg(type, message) {
         const newMessage = document.createElement('li');
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const messageText = messageInput.value;
         const sentMessage = document.createElement('li');
         sentMessage.className = 'message sent';
-        sentMessage.textContent = messageText;
+        sentMessage.textContent = messageText; 
         messageList.appendChild(sentMessage);
         messageList.scrollTop = messageList.scrollHeight;
 

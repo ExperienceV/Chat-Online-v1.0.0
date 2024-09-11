@@ -48,5 +48,5 @@ async function loginFun(event) {
         user_password: formData.get('user_password')
     };
     const responseElement = document.getElementById('response');
-    await handleRequest('http://localhost:8000/login_request', data, responseElement);
+    await handleRequest('http://localhost:8000/authenticate_process', data, responseElement);
 }

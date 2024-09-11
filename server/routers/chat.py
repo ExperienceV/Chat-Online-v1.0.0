@@ -6,42 +6,57 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pathlib import Path
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List
-from database.messages_queries import  save_message, whole_messages
+from database.messages_queries import save_message, whole_messages
 
 chat_rts = APIRouter()
 security = HTTPBearer()
 
-from dotenv import load_dotenv
-
 @chat_rts.get("/chat", response_class=HTMLResponse)
 async def chat():
+    """
+    Renderiza la página de chat.
+
+    Esta función lee el archivo HTML de la página de chat
+    y lo devuelve como respuesta.
+
+    Returns:
+        str: Contenido del archivo HTML de la página de chat.
+    """
     path = Path("../client/static/html/chat.html")
     return path.read_text()
 
 @chat_rts.get("/chat_request")
 async def chat_client(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Verifica las credenciales del cliente para acceder al chat.
+
+    Esta función valida el token proporcionado en las credenciales
+    y devuelve un estado según la validez del token.
+
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales de autorización
+                                                    que contienen el token.
+
+    Raises:
+        HTTPException: Si el token es inválido, se lanza una excepción
+                       con un código de estado 401.
+
+    Returns:
+        HTTPException: Si el token es válido, se lanza una excepción
+                       con un código de estado 200.
+    """
     token = credentials.credentials
     response = validate_token(token=token)
-
     if isinstance(response, JSONResponse):
         json_data = json.loads(response.body.decode('UTF-8'))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=json_data['message']
         )
-    
     return HTTPException(
         status_code=status.HTTP_200_OK,
         detail="No problem!"
     )
-
-@chat_rts.get("/verify/token")
-async def token_verify(Authorization: str = Header(None)):
-    token = Authorization.split(" ")[1]
-    return validate_token(token=token, output=True)
-
-
-
 
 class ConnectionManager:
     """
@@ -91,74 +106,99 @@ class ConnectionManager:
             message (str): El mensaje a enviar a todos los clientes.
         """
         for connection in self.active_connections:
-                if connection != sender:
-                    try:
-                        await connection.send_text(message)
-                    except RuntimeError:
-                        # Aquí podrías opcionalmente eliminar la conexión que falló
-                        print(f"Error: la conexión {connection} está cerrada o ya completada.")
-                
+            if connection != sender:
+                try:
+                    await connection.send_text(message)
+                except RuntimeError:
+                    # Aquí podrías opcionalmente eliminar la conexión que falló
+                    print(f"Error: la conexión {connection} está cerrada o ya completada.")
+
 connection_manager = ConnectionManager()
 
 @chat_rts.websocket("/ws_chat")
 async def websocket_endpoint(websocket: WebSocket):
+    """
+    Maneja la conexión WebSocket para el chat.
+
+    Esta función establece una conexión WebSocket, recibe mensajes
+    del cliente y los difunde a todos los demás clientes conectados.
+
+    Args:
+        websocket (WebSocket): La conexión WebSocket del cliente.
+    """
     await connection_manager.connect(websocket)
-    
-    cons = connection_manager.active_connections
-    print(cons)
-
     try:
-        #await websocket.accept()
-
         while True:
+            # Esperar a recibir un mensaje del websocket
             data_fetch = await websocket.receive_text()
             data_dict = json.loads(data_fetch)
-            message = data_dict["message"]
-            token = data_dict["token"]
-            
+            # Extraer el mensaje y el token del diccionario
+            message = data_dict.get("message")
+            token = data_dict.get("token")
+            # Decodificar el token para obtener información del usuario
             token_decode = await json_data(token=token)
-            user = token_decode["user_name"]
-            
-            # Guardado de mensajes con identificador.
-            user_id = token_decode["id"]
+            user_name = token_decode.get("user_name")
+            user_id = token_decode.get("id")
+            # Guardar el mensaje con el identificador del usuario
             await save_message(user_id, message)
-
-            send_message = f"{user}: {message}"
-            #await websocket.send_text(f"{user}: {data_message}")
-            await connection_manager.broadcast(send_message, websocket)
+            # Formatear el mensaje para enviar
+            formatted_message = f"{user_name}: {message}"
+            # Broadcast del mensaje a todas las conexiones activas
+            await connection_manager.broadcast(formatted_message, websocket)
     except WebSocketDisconnect as e:
-        print(e)
-
+        print(f"WebSocket desconectado: {e}")
 
 @chat_rts.get("/load_messages")
 async def load_messages(Authorization: str = Header(None)):
-    token = Authorization.split(" ")[1]
+    """
+    Carga los mensajes para el usuario autenticado.
 
+    Esta función verifica el token de autorización y carga los mensajes
+    asociados al usuario.
+
+    Args:
+        Authorization (str): Token de autorización del usuario.
+
+    Raises:
+        HTTPException: Si el token es inválido o el usuario no está autenticado.
+
+    Returns:
+        List[str]: Lista de mensajes cargados para el usuario.
+    """
+    token = Authorization.split(" ")[1]
     if token == 'null':
         print('No estás autenticado correctamente')
         raise HTTPException(
-            status_code=status.HTTP_405_METHOD_NOT_ALLOWED
+            status_code=status.HTTP_401_UNAUTHORIZED
         )
-
+    
     user = await json_data(token)
     messages = await whole_messages()
-
-    "Relacionar ID de mensaje con ID de usuario"
-
+    
+    # Relacionar ID de mensaje con ID de usuario
     msg_list = []
-
     for message in messages:
         if message[1] == user['id']:
             msg_list.append(f"true {message[2]}")
         else:
             msg_list.append(f"false {user['user_name']}: {message[2]}")
-
+    
     return msg_list
 
 async def json_data(token):
+    """
+    Verifica y decodifica el token JWT.
+
+    Esta función valida el token y devuelve los datos del usuario
+    si el token es válido.
+
+    Args:
+        token (str): El token JWT a verificar.
+
+    Returns:
+        dict | bool: Datos del usuario si el token es válido, False en caso contrario.
+    """
     verify_token_response = validate_token(token=token, output=False)
-    
     if isinstance(verify_token_response, JSONResponse):
         return False
-    
     return verify_token_response

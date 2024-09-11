@@ -21,7 +21,6 @@ def write_token(data: dict) -> str:
     
     try:
         token = encode(payload={**data, "exp": expire_date(2)}, key=secret_key, algorithm="HS256")
-        print(token)
     except Exception as e:
         raise RuntimeError("Error al generar el token: " + str(e))
     
