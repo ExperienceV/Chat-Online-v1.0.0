@@ -25,6 +25,8 @@ async def login_server(login: login_model):
         user_password=login.user_password
     )
 
+    print(login.user_name)
+
     if not response:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

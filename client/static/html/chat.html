@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHAT</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Chat Online</title>
+    <link rel="stylesheet" href="static/css/chat.css">
 </head>
-<body class="bg">
-    <div class="container">
-        <iframe class="token" src="token.html" title="Send token" width="100%" height="500px"></iframe>
-        <iframe class="chat" src="test.html" title="Send token" width="100%" height="500px"></iframe>
+<body>
+    <div class="chat-container" id="chat_div">
+        <div class="chat-header">
+            <h1>Chat Online</h1>
+        </div>
+        <ul id="messages" class="chat-messages"></ul>
+        <form id="send-message" class="chat-form">
+            <input id="message" type="text" autocomplete="off" required placeholder="Type your message here..."/>
+            <button>Send</button>
+        </form>
     </div>
+    <script src="static/js/Ws_Handler.js" defer></script>
 </body>
 </html>
