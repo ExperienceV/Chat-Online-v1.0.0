@@ -17,7 +17,7 @@ auth_rt = APIRouter()
 @auth_rt.get('/join', response_class=HTMLResponse)
 async def auth():
     path = Path("../client/static/html/join.html")
-    return path.read_text()
+    return path.read_text(encoding="utf-8")
 
 @auth_rt.post('/authenticate_process')
 async def auth_process(form: auth_model):

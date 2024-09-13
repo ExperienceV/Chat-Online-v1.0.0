@@ -23,7 +23,7 @@ async def chat():
         str: Contenido del archivo HTML de la página de chat.
     """
     path = Path("../client/static/html/chat.html")
-    return path.read_text()
+    return path.read_text(encoding="UTF-8")
 
 @chat_rts.get("/chat_request")
 async def chat_client(credentials: HTTPAuthorizationCredentials = Depends(security)):
